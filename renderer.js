@@ -20,6 +20,121 @@ clearBtn.disabled = true;
 mergeBtn.disabled = true;
 convertBtn.disabled = true;
 
+// Check Ghostscript status on startup
+async function checkGhostscriptStatus() {
+  try {
+    const gsStatus = await ipcRenderer.invoke("check-ghostscript");
+    updateGhostscriptStatus(gsStatus);
+
+    // If Ghostscript is available, hide the status indicator after a few seconds
+    if (gsStatus.available) {
+      setTimeout(() => {
+        const statusIndicator = document.getElementById("ghostscript-status");
+        if (statusIndicator) {
+          statusIndicator.style.opacity = "0";
+          setTimeout(() => {
+            statusIndicator.style.display = "none";
+          }, 500);
+        }
+      }, 3000); // Hide after 3 seconds
+    }
+  } catch (error) {
+    console.error("Error checking Ghostscript status:", error);
+    updateGhostscriptStatus({ available: false, path: null });
+  }
+}
+
+function updateGhostscriptStatus(gsStatus) {
+  // Create or update Ghostscript status indicator
+  let statusIndicator = document.getElementById("ghostscript-status");
+  if (!statusIndicator) {
+    statusIndicator = document.createElement("div");
+    statusIndicator.id = "ghostscript-status";
+    statusIndicator.className = "ghostscript-status";
+    document.body.insertBefore(statusIndicator, document.body.firstChild);
+  }
+
+  if (gsStatus.available) {
+    statusIndicator.innerHTML = `
+      <div class="gs-status-success">
+        <span>✅ Ghostscript está instalado</span>
+        <button id="gs-install-btn" style="display: none;">Instalar Ghostscript</button>
+      </div>
+    `;
+  } else {
+    statusIndicator.innerHTML = `
+      <div class="gs-status-error">
+        <span>⚠️ Ghostscript não está instalado</span>
+        <button id="gs-install-btn">Instalar Ghostscript</button>
+        <button id="gs-reset-btn" class="gs-reset-btn">Resetar Preferência</button>
+        <p class="gs-note">Algumas funcionalidades podem não funcionar sem o Ghostscript</p>
+      </div>
+    `;
+
+    // Add click handler for install button
+    const installBtn = document.getElementById("gs-install-btn");
+    if (installBtn) {
+      installBtn.onclick = installGhostscript;
+    }
+
+    // Add click handler for reset button
+    const resetBtn = document.getElementById("gs-reset-btn");
+    if (resetBtn) {
+      resetBtn.onclick = resetGhostscriptPreference;
+    }
+  }
+}
+
+async function installGhostscript() {
+  const installBtn = document.getElementById("gs-install-btn");
+  if (installBtn) {
+    installBtn.disabled = true;
+    installBtn.textContent = "Instalando...";
+  }
+
+  try {
+    const result = await ipcRenderer.invoke("install-ghostscript");
+    alert(result);
+    // Recheck status after installation
+    await checkGhostscriptStatus();
+
+    // If installation was successful, hide the status indicator
+    if (result.includes("successfully")) {
+      setTimeout(() => {
+        const statusIndicator = document.getElementById("ghostscript-status");
+        if (statusIndicator) {
+          statusIndicator.style.opacity = "0";
+          setTimeout(() => {
+            statusIndicator.style.display = "none";
+          }, 500);
+        }
+      }, 2000);
+    }
+  } catch (error) {
+    alert(`Erro ao instalar Ghostscript: ${error.message}`);
+  } finally {
+    if (installBtn) {
+      installBtn.disabled = false;
+      installBtn.textContent = "Instalar Ghostscript";
+    }
+  }
+}
+
+// Reset Ghostscript installation preference
+async function resetGhostscriptPreference() {
+  try {
+    const result = await ipcRenderer.invoke("reset-ghostscript-preference");
+    alert(result);
+    // Recheck status to see if we should show the installation prompt
+    await checkGhostscriptStatus();
+  } catch (error) {
+    alert(`Erro ao resetar preferência: ${error.message}`);
+  }
+}
+
+// Initialize Ghostscript status check
+checkGhostscriptStatus();
+
 selectBtn.onclick = async () => {
   const newFiles = await ipcRenderer.invoke("select-pdfs");
 
@@ -263,6 +378,35 @@ async function generatePageThumbnails() {
       });
     } catch (err) {
       console.error(`Error generating thumbnails for ${file}:`, err);
+
+      // Show user-friendly error message
+      if (err.message && err.message.includes("Ghostscript")) {
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "page-thumbnail error";
+        errorDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 24px; color: #dc3545; margin-bottom: 10px;">⚠️</div>
+            <div style="font-weight: bold; color: #721c24; margin-bottom: 5px;">Ghostscript não instalado</div>
+            <div style="font-size: 12px; color: #666;">Arquivo ${i + 1}</div>
+            <div style="font-size: 11px; color: #999; margin-top: 5px;">Clique em "Instalar Ghostscript" no canto superior direito</div>
+          </div>
+        `;
+        pagesContainer.appendChild(errorDiv);
+      } else {
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "page-thumbnail error";
+        errorDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 24px; color: #dc3545; margin-bottom: 10px;">❌</div>
+            <div style="font-weight: bold; color: #721c24; margin-bottom: 5px;">Erro ao processar</div>
+            <div style="font-size: 12px; color: #666;">Arquivo ${i + 1}</div>
+            <div style="font-size: 11px; color: #999; margin-top: 5px;">${
+              err.message || "Erro desconhecido"
+            }</div>
+          </div>
+        `;
+        pagesContainer.appendChild(errorDiv);
+      }
     }
   }
 }

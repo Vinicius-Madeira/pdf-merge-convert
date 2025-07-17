@@ -15,6 +15,8 @@ const GHOSTSCRIPT_URLS = {
 };
 
 let ghostscriptPath = null;
+let isInstallingGhostscript = false;
+let ghostscriptInstallationDeclined = false;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,19 +35,68 @@ function createWindow() {
 // Check if Ghostscript is available
 async function checkGhostscript() {
   return new Promise((resolve) => {
+    // First try the standard 'gs' command
     exec("gs --version", (error, stdout, stderr) => {
-      if (error) {
-        resolve(false);
-      } else {
+      if (!error) {
         ghostscriptPath = "gs";
+        console.log("Ghostscript found via 'gs' command:", stdout.trim());
         resolve(true);
+        return;
+      }
+
+      // Try common Windows Ghostscript paths
+      const commonPaths = [
+        "C:\\Program Files\\gs\\gs10.00.0\\bin\\gswin64c.exe",
+        "C:\\Program Files\\gs\\gs10.00.0\\bin\\gswin32c.exe",
+        "C:\\Program Files (x86)\\gs\\gs10.00.0\\bin\\gswin32c.exe",
+        "C:\\Program Files\\gs\\gs9.56.1\\bin\\gswin64c.exe",
+        "C:\\Program Files\\gs\\gs9.56.1\\bin\\gswin32c.exe",
+        "C:\\Program Files (x86)\\gs\\gs9.56.1\\bin\\gswin32c.exe",
+        // Add more recent versions
+        "C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe",
+        "C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin32c.exe",
+        "C:\\Program Files (x86)\\gs\\gs10.05.1\\bin\\gswin32c.exe",
+      ];
+
+      let checkedPaths = 0;
+      const totalPaths = commonPaths.length;
+
+      for (const gsPath of commonPaths) {
+        if (fs.existsSync(gsPath)) {
+          exec(`"${gsPath}" --version`, (error, stdout, stderr) => {
+            checkedPaths++;
+            if (!error) {
+              ghostscriptPath = gsPath;
+              console.log(
+                "Ghostscript found at:",
+                gsPath,
+                "Version:",
+                stdout.trim()
+              );
+              resolve(true);
+              return;
+            }
+            // If this was the last path to check and none worked
+            if (checkedPaths === totalPaths) {
+              console.log("Ghostscript not found in any common location");
+              resolve(false);
+            }
+          });
+        } else {
+          checkedPaths++;
+          // If this was the last path to check and none existed
+          if (checkedPaths === totalPaths) {
+            console.log("Ghostscript not found in any common location");
+            resolve(false);
+          }
+        }
       }
     });
   });
 }
 
-// Download Ghostscript installer
-async function downloadGhostscript() {
+// Download Ghostscript installer with progress
+async function downloadGhostscript(progressCallback) {
   const is64Bit = process.arch === "x64";
   const url = is64Bit ? GHOSTSCRIPT_URLS.x64 : GHOSTSCRIPT_URLS.x86;
   const installerPath = path.join(
@@ -54,29 +105,59 @@ async function downloadGhostscript() {
   );
 
   console.log("Downloading Ghostscript...");
+  if (progressCallback)
+    progressCallback("Downloading Ghostscript installer...");
 
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(installerPath);
-    https
-      .get(url, (response) => {
-        if (response.statusCode === 200) {
-          response.pipe(file);
-          file.on("finish", () => {
-            file.close();
-            resolve(installerPath);
-          });
-        } else {
-          reject(
-            new Error(`Failed to download Ghostscript: ${response.statusCode}`)
-          );
-        }
-      })
-      .on("error", reject);
+
+    const makeRequest = (url) => {
+      https
+        .get(url, (response) => {
+          // Handle redirects
+          if (response.statusCode === 301 || response.statusCode === 302) {
+            const newUrl = response.headers.location;
+            console.log(`Redirecting to: ${newUrl}`);
+            makeRequest(newUrl);
+            return;
+          }
+
+          if (response.statusCode === 200) {
+            const totalSize = parseInt(response.headers["content-length"], 10);
+            let downloadedSize = 0;
+
+            response.on("data", (chunk) => {
+              downloadedSize += chunk.length;
+              if (progressCallback && totalSize) {
+                const progress = Math.round((downloadedSize / totalSize) * 100);
+                progressCallback(`Downloading Ghostscript... ${progress}%`);
+              }
+            });
+
+            response.pipe(file);
+            file.on("finish", () => {
+              file.close();
+              if (progressCallback)
+                progressCallback("Download completed. Installing...");
+              resolve(installerPath);
+            });
+          } else {
+            reject(
+              new Error(
+                `Failed to download Ghostscript: ${response.statusCode}`
+              )
+            );
+          }
+        })
+        .on("error", reject);
+    };
+
+    makeRequest(url);
   });
 }
 
-// Install Ghostscript
-async function installGhostscript(installerPath) {
+// Install Ghostscript with better error handling
+async function installGhostscript(installerPath, progressCallback) {
   return new Promise((resolve, reject) => {
     const installDir = path.join(
       process.env.PROGRAMFILES || "C:\\Program Files",
@@ -84,36 +165,129 @@ async function installGhostscript(installerPath) {
       "gs10.00.0"
     );
 
-    exec(
-      `"${installerPath}" /S /D="${installDir}"`,
-      (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-        } else {
-          // Wait a moment for installation to complete
-          setTimeout(() => {
-            ghostscriptPath = path.join(installDir, "bin", "gswin64c.exe");
-            resolve();
-          }, 5000);
-        }
+    if (progressCallback)
+      progressCallback(
+        "Installing Ghostscript (this may take a few minutes)..."
+      );
+
+    // Use a more robust installation command
+    const installCommand = `"${installerPath}" /S /D="${installDir}" /NORESTART`;
+
+    exec(installCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Installation error:", error);
+        reject(new Error(`Installation failed: ${error.message}`));
+        return;
       }
-    );
+
+      // Wait longer for installation to complete and verify
+      setTimeout(async () => {
+        try {
+          // Check if installation was successful
+          const gsExePath = path.join(installDir, "bin", "gswin64c.exe");
+          if (fs.existsSync(gsExePath)) {
+            // Test if the executable works
+            exec(`"${gsExePath}" --version`, (error, stdout, stderr) => {
+              if (!error) {
+                ghostscriptPath = gsExePath;
+                if (progressCallback)
+                  progressCallback("Ghostscript installed successfully!");
+                resolve();
+              } else {
+                reject(
+                  new Error("Ghostscript installed but not working properly")
+                );
+              }
+            });
+          } else {
+            reject(
+              new Error(
+                "Ghostscript installation completed but executable not found"
+              )
+            );
+          }
+        } catch (err) {
+          reject(new Error(`Installation verification failed: ${err.message}`));
+        }
+      }, 10000); // Wait 10 seconds for installation
+    });
   });
 }
 
-// Initialize Ghostscript on app startup
+// Initialize Ghostscript on app startup with user feedback
 async function initializeGhostscript() {
+  if (isInstallingGhostscript) {
+    return; // Prevent multiple simultaneous installations
+  }
+
   const isAvailable = await checkGhostscript();
 
-  if (!isAvailable && process.platform === "win32") {
+  if (
+    !isAvailable &&
+    process.platform === "win32" &&
+    !ghostscriptInstallationDeclined
+  ) {
+    isInstallingGhostscript = true;
+
     try {
-      const installerPath = await downloadGhostscript();
-      await installGhostscript(installerPath);
-      console.log("Ghostscript installed successfully");
+      // Show installation dialog
+      const { response, checkboxChecked } = await dialog.showMessageBox({
+        type: "question",
+        buttons: ["Yes", "No"],
+        defaultId: 0,
+        title: "Ghostscript Required",
+        message:
+          "PDF World requires Ghostscript to generate thumbnails and convert PDFs to PDF/A format.",
+        detail:
+          "Would you like to download and install Ghostscript now? This will take a few minutes.",
+        checkboxLabel: "Don't ask again",
+        checkboxChecked: false,
+      });
+
+      if (response === 0) {
+        // User clicked Yes
+        const installerPath = await downloadGhostscript((message) => {
+          console.log(message);
+        });
+
+        await installGhostscript(installerPath, (message) => {
+          console.log(message);
+        });
+
+        console.log("Ghostscript installed successfully");
+
+        // Show success message
+        dialog.showMessageBox({
+          type: "info",
+          title: "Installation Complete",
+          message: "Ghostscript has been installed successfully!",
+          detail:
+            "You can now use all PDF World features including thumbnail generation and PDF/A conversion.",
+        });
+      } else {
+        console.log("User declined Ghostscript installation");
+        if (checkboxChecked) {
+          ghostscriptInstallationDeclined = true;
+          console.log("User chose not to be asked again");
+        }
+      }
     } catch (error) {
       console.error("Failed to install Ghostscript:", error);
-      // Continue without Ghostscript - user will get error messages
+
+      // Show error message to user
+      dialog.showErrorBox(
+        "Ghostscript Installation Failed",
+        `Failed to install Ghostscript: ${error.message}\n\nYou can manually install Ghostscript from:\nhttps://www.ghostscript.com/releases/gsdnld.html\n\nSome features may not work without Ghostscript.`
+      );
+    } finally {
+      isInstallingGhostscript = false;
     }
+  } else if (isAvailable) {
+    console.log(
+      "Ghostscript is already available, skipping installation prompt"
+    );
+  } else if (ghostscriptInstallationDeclined) {
+    console.log("User previously declined Ghostscript installation");
   }
 }
 
@@ -139,6 +313,16 @@ ipcMain.handle("select-single-pdf", async () => {
 });
 
 ipcMain.handle("generate-thumbnails", async (event, filePath) => {
+  // Check if Ghostscript is available
+  if (!ghostscriptPath) {
+    const isAvailable = await checkGhostscript();
+    if (!isAvailable) {
+      throw new Error(
+        "Ghostscript is not installed. Please install Ghostscript to generate thumbnails."
+      );
+    }
+  }
+
   const outputDir = path.join(
     app.getPath("temp"),
     "pdf-thumbnails",
@@ -230,6 +414,16 @@ ipcMain.handle("merge-pdfs", async (event, pageOrder) => {
 });
 
 ipcMain.handle("convert-to-pdfa", async (event, mergedFilePath) => {
+  // Check if Ghostscript is available
+  if (!ghostscriptPath) {
+    const isAvailable = await checkGhostscript();
+    if (!isAvailable) {
+      throw new Error(
+        "Ghostscript is not installed. Please install Ghostscript to convert PDFs to PDF/A format."
+      );
+    }
+  }
+
   // Show save dialog for PDF/A file
   const saveResult = await dialog.showSaveDialog({
     title: "Salvar PDF/A",
@@ -270,4 +464,49 @@ ipcMain.handle("convert-to-pdfa", async (event, mergedFilePath) => {
       }
     });
   });
+});
+
+// Manual Ghostscript installation handler
+ipcMain.handle("install-ghostscript", async () => {
+  if (isInstallingGhostscript) {
+    throw new Error("Ghostscript installation is already in progress");
+  }
+
+  const isAvailable = await checkGhostscript();
+  if (isAvailable) {
+    return "Ghostscript is already installed and working";
+  }
+
+  isInstallingGhostscript = true;
+
+  try {
+    const installerPath = await downloadGhostscript((message) => {
+      console.log(message);
+    });
+
+    await installGhostscript(installerPath, (message) => {
+      console.log(message);
+    });
+
+    return "Ghostscript installed successfully!";
+  } catch (error) {
+    throw new Error(`Failed to install Ghostscript: ${error.message}`);
+  } finally {
+    isInstallingGhostscript = false;
+  }
+});
+
+// Check Ghostscript status
+ipcMain.handle("check-ghostscript", async () => {
+  const isAvailable = await checkGhostscript();
+  return {
+    available: isAvailable,
+    path: ghostscriptPath,
+  };
+});
+
+// Reset Ghostscript installation preference
+ipcMain.handle("reset-ghostscript-preference", () => {
+  ghostscriptInstallationDeclined = false;
+  return "Ghostscript installation preference reset. You will be asked again on next startup.";
 });

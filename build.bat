@@ -27,7 +27,12 @@ if %errorlevel% equ 0 (
     dir dist
     echo.
     echo 🎉 Your app is ready for distribution!
-    echo 💡 Users will need to install Ghostscript from https://www.ghostscript.com/releases/gsdnld.html
+    echo.
+    echo 📋 IMPORTANT NOTES FOR WINDOWS USERS:
+    echo 💡 The app will automatically prompt users to install Ghostscript if not found
+    echo 💡 Users can also manually install Ghostscript from: https://www.ghostscript.com/releases/gsdnld.html
+    echo 💡 The app now includes better error handling and user feedback for Ghostscript installation
+    echo 💡 If installation fails, users will see helpful error messages and manual installation instructions
 ) else (
     echo ❌ Build failed!
     exit /b 1
