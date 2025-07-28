@@ -1,42 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Conversor PDF para PDF/A</title>
-    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF World - Conversor PDF para PDF/A</title>
   </head>
   <body>
-    <div class="container">
-      <h1>Conversor PDF para PDF/A</h1>
-
-      <div class="controls">
-        <div class="main-controls">
-          <div class="left-controls">
-            <button id="select">Selecionar PDFs</button>
-            <button id="merge">Juntar PDFs</button>
-            <button id="convert" disabled>Converter Juntado para PDF/A</button>
-            <button id="clear">Limpar Seleção</button>
-          </div>
-          <div class="single-convert">
-            <button id="convert-single">Converter PDF para PDF/A</button>
-          </div>
-        </div>
-      </div>
-
-      <ul id="file-list" class="file-list"></ul>
-
-      <div class="preview-container">
-        <div class="pdf-preview">
-          <h3>Visualização das Páginas PDF</h3>
-          <p>Arraste e solte as páginas para reorganizá-las</p>
-          <div id="pages-container"></div>
-        </div>
-      </div>
-
-      <div id="merge-status" class="status"></div>
-      <div id="status" class="status"></div>
-    </div>
-
-    <script src="renderer.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/ui/main.tsx"></script>
   </body>
 </html>

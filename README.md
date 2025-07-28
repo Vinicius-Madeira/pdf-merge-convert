@@ -1,170 +1,165 @@
 # PDF World
 
-A powerful Electron application for merging PDFs and converting them to PDF/A format with drag-and-drop page rearrangement.
+A PDF to PDF/A converter with drag-and-drop page rearrangement built with Electron, React, and TypeScript.
 
 ## Features
 
-- 📄 **PDF Preview**: View all pages as thumbnails
-- 🎯 **Drag & Drop**: Rearrange individual pages with visual feedback
-- 🔗 **Smart Merging**: Merge PDFs in your custom page order
-- 📋 **PDF/A Conversion**: Convert merged PDFs to PDF/A format for long-term archiving
-- 🎨 **Modern UI**: Beautiful, responsive interface
-
-## Prerequisites
-
-- **Node.js** (v16 or higher)
-- **Ghostscript** (for PDF/A conversion and thumbnail generation)
-
-### Installing Ghostscript
-
-#### Linux (Ubuntu/Debian):
-
-```bash
-sudo apt-get install ghostscript
-```
-
-#### macOS:
-
-```bash
-brew install ghostscript
-```
-
-#### Windows:
-
-Download from [Ghostscript website](https://www.ghostscript.com/releases/gsdnld.html)
-
-## Installation
-
-1. Clone or download this repository
-2. Install dependencies:
-
-```bash
-npm install
-```
+- Convert PDF files to PDF/A format
+- Merge multiple PDF files
+- Drag-and-drop page rearrangement
+- Automatic Ghostscript installation (Windows)
+- Modern React-based UI with TypeScript
+- Beautiful UI with shadcn/ui components and Tailwind CSS
 
 ## Development
 
-Run the app in development mode:
+This project has been restructured to use:
 
-```bash
-npm start
+- **Electron** for the desktop application framework
+- **React** for the user interface
+- **TypeScript** for type safety
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **shadcn/ui** for beautiful, accessible components
+- **Secure IPC** communication between main and renderer processes
+
+## Project Structure
+
+```
+PDF-world/
+├── src/
+│   ├── electron/          # Electron main process
+│   │   ├── main.ts       # Main process entry point
+│   │   └── preload.ts    # Preload script for secure IPC
+│   └── ui/               # React frontend
+│       ├── components/   # React components
+│       │   ├── ui/       # shadcn/ui components
+│       │   │   ├── button.tsx
+│       │   │   ├── card.tsx
+│       │   │   ├── input.tsx
+│       │   │   └── badge.tsx
+│       │   └── ...       # Custom components
+│       ├── lib/          # Utility functions
+│       │   └── utils.ts  # shadcn/ui utilities
+│       ├── hooks/        # Custom React hooks
+│       ├── App.tsx       # Main React component
+│       ├── main.tsx      # React entry point
+│       └── index.css     # Tailwind CSS styles
+├── dist/                 # Built application
+├── dist-electron/        # Built Electron files
+├── index.html           # HTML entry point
+├── package.json         # Dependencies and scripts
+├── tsconfig.json        # TypeScript configuration
+├── tailwind.config.js   # Tailwind CSS configuration
+├── postcss.config.js    # PostCSS configuration
+├── vite.config.ts       # Vite configuration
+└── README.md           # This file
 ```
 
-## Building for Distribution
+## UI Components
 
-### Install electron-builder:
+This project uses shadcn/ui components for a consistent and beautiful interface:
 
-```bash
-npm install --save-dev electron-builder
-```
+- **Button** - Various button styles and variants
+- **Card** - Container components with headers and content
+- **Badge** - Status indicators and labels
+- **Input** - Form input components
 
-### Build for your platform:
+All components are built with accessibility in mind and follow modern design patterns.
 
-**Linux:**
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run build:linux` - Build for Linux
+- `npm run build:win` - Build for Windows
+- `npm run build:mac` - Build for macOS
+- `npm test` - Run tests
+- `npm run test:e2e` - Run end-to-end tests
+
+## Development Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Start development server:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Build for production:
+   ```bash
+   npm run build
+   ```
+
+## Building Distributables
+
+### Linux
 
 ```bash
 npm run build:linux
 ```
 
-**Windows:**
+### Windows
 
 ```bash
 npm run build:win
 ```
 
-**macOS:**
+### macOS
 
 ```bash
 npm run build:mac
 ```
 
-**All platforms:**
+## Architecture
 
-```bash
-npm run build
-```
+### Main Process (Electron)
 
-### Build outputs:
+- Handles file system operations
+- Manages Ghostscript installation
+- Provides secure IPC endpoints
+- Handles native dialogs
 
-- **Linux**: AppImage and .deb packages in `dist/` folder
-- **Windows**: .exe installer in `dist/` folder
-- **macOS**: .dmg file in `dist/` folder
+### Renderer Process (React)
 
-## Distribution Options
+- Modern React UI with TypeScript
+- Secure communication via preload script
+- Drag-and-drop functionality
+- Real-time status updates
 
-### 1. **Direct Distribution**
+### Security
 
-- Share the built installer files directly with users
-- Users need to install Ghostscript separately
+- Context isolation enabled
+- Node integration disabled
+- Secure IPC communication
+- Type-safe API contracts
 
-### 2. **Portable App (Linux)**
+## Dependencies
 
-- AppImage files are portable and don't require installation
-- Users still need Ghostscript installed
+### Production
 
-### 3. **Bundled Distribution**
+- `electron` - Desktop application framework
+- `react` - UI library
+- `react-dom` - React DOM rendering
+- `pdf-lib` - PDF manipulation
+- `pdf-merger-js` - PDF merging
 
-For a more complete solution, you can bundle Ghostscript with your app:
+### Development
 
-#### Linux:
-
-```bash
-# Create a script that checks for Ghostscript and installs if missing
-echo '#!/bin/bash
-if ! command -v gs &> /dev/null; then
-    echo "Installing Ghostscript..."
-    sudo apt-get update && sudo apt-get install -y ghostscript
-fi
-./your-app' > run-app.sh
-```
-
-#### Windows:
-
-- Include Ghostscript installer with your app
-- Create a setup script that installs both
-
-## User Requirements
-
-### System Requirements:
-
-- **OS**: Windows 10+, macOS 10.14+, or Linux (Ubuntu 18.04+)
-- **RAM**: 4GB minimum, 8GB recommended
-- **Storage**: 500MB free space
-- **Ghostscript**: Must be installed and accessible via command line
-
-### Installation Instructions for End Users:
-
-1. **Install Ghostscript** (if not already installed)
-2. **Download and run** the appropriate installer for their platform
-3. **Launch the app** and start converting PDFs!
-
-## Troubleshooting
-
-### Common Issues:
-
-1. **"gs command not found"**
-
-   - Install Ghostscript (see Prerequisites section)
-
-2. **Permission errors on Linux**
-
-   - Make sure the AppImage is executable: `chmod +x PDF-World-*.AppImage`
-
-3. **Blank pages in PDF/A output**
-
-   - This has been fixed in the current version with improved Ghostscript parameters
-
-4. **App won't start**
-   - Check that all dependencies are installed
-   - Try running from command line to see error messages
-
-## Development Notes
-
-- The app uses `pdf-lib` for page-by-page PDF manipulation
-- Ghostscript handles PDF/A conversion and thumbnail generation
-- Drag-and-drop functionality is implemented with HTML5 APIs
-- All file operations are performed in the main process for security
+- `typescript` - Type safety
+- `vite` - Build tool and dev server
+- `@vitejs/plugin-react` - React support for Vite
+- `vite-plugin-electron` - Electron integration
+- `electron-builder` - Application packaging
+- `vitest` - Testing framework
+- `@playwright/test` - E2E testing
 
 ## License
 
-ISC License - see package.json for details
+ISC
