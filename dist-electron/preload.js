@@ -1,1 +1,23 @@
-"use strict";const t=require("electron");t.contextBridge.exposeInMainWorld("electronAPI",{checkGhostscript:()=>t.ipcRenderer.invoke("check-ghostscript"),getGhostscriptPath:()=>t.ipcRenderer.invoke("get-ghostscript-path"),getPdfPageCount:e=>t.ipcRenderer.invoke("get-pdf-page-count",e),generatePdfThumbnail:(e,r)=>t.ipcRenderer.invoke("generate-pdf-thumbnail",e,r),convertToPdfa:(e,r)=>t.ipcRenderer.invoke("convert-to-pdfa",e,r),selectFiles:()=>t.ipcRenderer.invoke("select-files"),selectSavePath:e=>t.ipcRenderer.invoke("select-save-path",e),onGhostscriptDownloadProgress:e=>{t.ipcRenderer.on("ghostscript-download-progress",(r,n)=>e(n))},onGhostscriptInstallProgress:e=>{t.ipcRenderer.on("ghostscript-install-progress",(r,n)=>e(n))}});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  checkGhostscript: () => electron.ipcRenderer.invoke("check-ghostscript"),
+  getGhostscriptPath: () => electron.ipcRenderer.invoke("get-ghostscript-path"),
+  getPdfPageCount: (filePath) => electron.ipcRenderer.invoke("get-pdf-page-count", filePath),
+  generatePdfThumbnail: (filePath, pageNumber) => electron.ipcRenderer.invoke("generate-pdf-thumbnail", filePath, pageNumber),
+  convertToPdfa: (inputPath, outputPath) => electron.ipcRenderer.invoke("convert-to-pdfa", inputPath, outputPath),
+  selectFiles: () => electron.ipcRenderer.invoke("select-files"),
+  selectSavePath: (defaultName) => electron.ipcRenderer.invoke("select-save-path", defaultName),
+  onGhostscriptDownloadProgress: (callback) => {
+    electron.ipcRenderer.on(
+      "ghostscript-download-progress",
+      (event, progress) => callback(progress)
+    );
+  },
+  onGhostscriptInstallProgress: (callback) => {
+    electron.ipcRenderer.on(
+      "ghostscript-install-progress",
+      (event, progress) => callback(progress)
+    );
+  }
+});

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 interface ControlsProps {
   onSelectFiles: () => void;
-  onClearFiles: () => void;
   onMergeFiles: () => void;
   onConvertSingle: () => void;
   onConvertMerged: () => void;
@@ -14,7 +13,6 @@ interface ControlsProps {
 
 export function Controls({
   onSelectFiles,
-  onClearFiles,
   onMergeFiles,
   onConvertSingle,
   onConvertMerged,
@@ -25,53 +23,34 @@ export function Controls({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Controles</CardTitle>
+        <CardTitle>Ações</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <Button
-              onClick={onSelectFiles}
-              className="w-full"
-              variant="default"
-            >
-              Selecionar PDFs
-            </Button>
-            <Button
-              onClick={onMergeFiles}
-              disabled={!hasFiles}
-              className="w-full"
-              variant="secondary"
-            >
-              Juntar PDFs
-            </Button>
-            <Button
-              onClick={onConvertMerged}
-              disabled={!hasMergedFile || !ghostscriptAvailable}
-              className="w-full"
-              variant="outline"
-            >
-              Converter Juntado para PDF/A
-            </Button>
-            <Button
-              onClick={onClearFiles}
-              disabled={!hasFiles}
-              className="w-full"
-              variant="destructive"
-            >
-              Limpar Seleção
-            </Button>
-          </div>
-          <div className="space-y-3">
-            <Button
-              onClick={onConvertSingle}
-              disabled={!hasFiles || !ghostscriptAvailable}
-              className="w-full h-full"
-              variant="default"
-            >
-              Converter PDF para PDF/A
-            </Button>
-          </div>
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={onSelectFiles} variant="default">
+            Adicionar PDF(s)
+          </Button>
+          <Button
+            onClick={onMergeFiles}
+            disabled={!hasFiles}
+            variant="secondary"
+          >
+            Juntar PDFs
+          </Button>
+          <Button
+            onClick={onConvertMerged}
+            disabled={!hasMergedFile || !ghostscriptAvailable}
+            variant="outline"
+          >
+            Converter Juntado para PDF/A
+          </Button>
+          <Button
+            onClick={onConvertSingle}
+            disabled={!hasFiles || !ghostscriptAvailable}
+            variant="default"
+          >
+            Converter um PDF para PDF/A
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -22,7 +22,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <FileText className="h-5 w-5" />
-            <span>Visualização das Páginas PDF</span>
+            <span>Visualização das Páginas</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -40,7 +40,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <FileText className="h-5 w-5" />
-          <span>Visualização das Páginas PDF</span>
+          <span>Visualização das Páginas</span>
           <Badge variant="secondary">{thumbnails.length} páginas</Badge>
         </CardTitle>
       </CardHeader>

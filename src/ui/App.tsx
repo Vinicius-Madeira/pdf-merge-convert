@@ -5,7 +5,6 @@ import { PdfPreview } from "./components/PdfPreview";
 import { Status } from "./components/Status";
 import { GhostscriptStatus } from "./components/GhostscriptStatus";
 import { useElectronAPI } from "./hooks/useElectronAPI";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 
 interface FileItem {
   path: string;
@@ -63,7 +62,7 @@ export default function App() {
       await generateThumbnails(newFiles);
     } catch (error) {
       console.error("Error selecting files:", error);
-      setStatus("Erro ao selecionar arquivos");
+      setStatus("Erro ao selecionar arquivo(s)");
     }
   };
 
@@ -253,24 +252,18 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="container mx-auto max-w-7xl space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold text-center">
-              Conversor PDF para PDF/A
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <GhostscriptStatus
-          available={ghostscriptAvailable}
-          isInstalling={isInstallingGhostscript}
-          progress={ghostscriptProgress}
-          onInstall={checkGhostscriptStatus}
-        />
+        {/* Ghostscript Status - Top Right Corner */}
+        <div className="absolute top-4 right-4 z-50">
+          <GhostscriptStatus
+            available={ghostscriptAvailable}
+            isInstalling={isInstallingGhostscript}
+            progress={ghostscriptProgress}
+            onInstall={checkGhostscriptStatus}
+          />
+        </div>
 
         <Controls
           onSelectFiles={handleSelectFiles}
-          onClearFiles={handleClearFiles}
           onMergeFiles={handleMergeFiles}
           onConvertSingle={handleConvertSingle}
           onConvertMerged={handleConvertMerged}
@@ -279,7 +272,11 @@ export default function App() {
           ghostscriptAvailable={ghostscriptAvailable}
         />
 
-        <FileList files={selectedFiles} onRemoveFile={handleRemoveFile} />
+        <FileList
+          files={selectedFiles}
+          onRemoveFile={handleRemoveFile}
+          onClearFiles={handleClearFiles}
+        />
 
         <PdfPreview thumbnails={pageThumbnails} onReorder={handleDragReorder} />
 
