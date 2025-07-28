@@ -1,5 +1,5 @@
 import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 
 interface ControlsProps {
   onSelectFiles: () => void;
@@ -21,12 +21,9 @@ export function Controls({
   ghostscriptAvailable,
 }: ControlsProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ações</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-3">
+    <Card className="fixed top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b rounded-lg">
+      <CardContent className="py-3">
+        <div className="flex flex-wrap gap-3 justify-center">
           <Button onClick={onSelectFiles} variant="default">
             Adicionar PDF(s)
           </Button>

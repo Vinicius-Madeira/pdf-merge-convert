@@ -6,6 +6,8 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   getPdfPageCount: (filePath) => electron.ipcRenderer.invoke("get-pdf-page-count", filePath),
   generatePdfThumbnail: (filePath, pageNumber) => electron.ipcRenderer.invoke("generate-pdf-thumbnail", filePath, pageNumber),
   convertToPdfa: (inputPath, outputPath) => electron.ipcRenderer.invoke("convert-to-pdfa", inputPath, outputPath),
+  mergePdfs: (inputPaths, outputPath, pageOrders) => electron.ipcRenderer.invoke("merge-pdfs", inputPaths, outputPath, pageOrders),
+  mergePdfsSequence: (pageSequence, outputPath) => electron.ipcRenderer.invoke("merge-pdfs-sequence", pageSequence, outputPath),
   selectFiles: () => electron.ipcRenderer.invoke("select-files"),
   selectSavePath: (defaultName) => electron.ipcRenderer.invoke("select-save-path", defaultName),
   onGhostscriptDownloadProgress: (callback) => {

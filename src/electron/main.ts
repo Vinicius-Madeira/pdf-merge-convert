@@ -301,6 +301,68 @@ async function initializeGhostscript(): Promise<boolean> {
   }
 }
 
+// Merge PDFs using pdf-lib with specific page orders
+async function mergePdfs(
+  inputPaths: string[],
+  outputPath: string,
+  pageOrders?: number[][]
+): Promise<void> {
+  try {
+    const mergedPdf = await PDFDocument.create();
+
+    for (let i = 0; i < inputPaths.length; i++) {
+      const inputPath = inputPaths[i];
+      const pdfBytes = fs.readFileSync(inputPath);
+      const pdf = await PDFDocument.load(pdfBytes);
+
+      // If pageOrders is provided, use specific pages, otherwise use all pages
+      const pageIndices =
+        pageOrders && pageOrders[i]
+          ? pageOrders[i].map((pageNum) => pageNum) // Convert to 0-based indices
+          : pdf.getPageIndices();
+
+      const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+
+    const mergedPdfBytes = await mergedPdf.save();
+    fs.writeFileSync(outputPath, mergedPdfBytes);
+  } catch (error) {
+    throw new Error(`Failed to merge PDFs: ${error}`);
+  }
+}
+
+// Merge PDFs with exact page sequence
+async function mergePdfsWithSequence(
+  pageSequence: Array<{ filePath: string; pageIndex: number }>,
+  outputPath: string
+): Promise<void> {
+  try {
+    const mergedPdf = await PDFDocument.create();
+
+    // Load all PDFs once to avoid repeated file I/O
+    const pdfCache = new Map<string, PDFDocument>();
+
+    for (const { filePath, pageIndex } of pageSequence) {
+      // Load PDF if not already cached
+      if (!pdfCache.has(filePath)) {
+        const pdfBytes = fs.readFileSync(filePath);
+        const pdf = await PDFDocument.load(pdfBytes);
+        pdfCache.set(filePath, pdf);
+      }
+
+      const pdf = pdfCache.get(filePath)!;
+      const copiedPages = await mergedPdf.copyPages(pdf, [pageIndex]);
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+
+    const mergedPdfBytes = await mergedPdf.save();
+    fs.writeFileSync(outputPath, mergedPdfBytes);
+  } catch (error) {
+    throw new Error(`Failed to merge PDFs: ${error}`);
+  }
+}
+
 // IPC handlers
 ipcMain.handle("check-ghostscript", async () => {
   return await initializeGhostscript();
@@ -339,6 +401,29 @@ ipcMain.handle(
         resolve(outputPath);
       });
     });
+  }
+);
+
+ipcMain.handle(
+  "merge-pdfs",
+  async (
+    event,
+    inputPaths: string[],
+    outputPath: string,
+    pageOrders?: number[][]
+  ) => {
+    return await mergePdfs(inputPaths, outputPath, pageOrders);
+  }
+);
+
+ipcMain.handle(
+  "merge-pdfs-sequence",
+  async (
+    event,
+    pageSequence: Array<{ filePath: string; pageIndex: number }>,
+    outputPath: string
+  ) => {
+    return await mergePdfsWithSequence(pageSequence, outputPath);
   }
 );
 

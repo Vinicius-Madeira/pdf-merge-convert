@@ -36,6 +36,7 @@
     "pdf-merger-js": "^5.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

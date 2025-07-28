@@ -11,6 +11,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("generate-pdf-thumbnail", filePath, pageNumber),
   convertToPdfa: (inputPath: string, outputPath: string) =>
     ipcRenderer.invoke("convert-to-pdfa", inputPath, outputPath),
+  mergePdfs: (
+    inputPaths: string[],
+    outputPath: string,
+    pageOrders?: number[][]
+  ) => ipcRenderer.invoke("merge-pdfs", inputPaths, outputPath, pageOrders),
+  mergePdfsSequence: (
+    pageSequence: Array<{ filePath: string; pageIndex: number }>,
+    outputPath: string
+  ) => ipcRenderer.invoke("merge-pdfs-sequence", pageSequence, outputPath),
   selectFiles: () => ipcRenderer.invoke("select-files"),
   selectSavePath: (defaultName: string) =>
     ipcRenderer.invoke("select-save-path", defaultName),

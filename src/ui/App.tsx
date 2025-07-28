@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { FileList } from "./components/FileList";
 import { Controls } from "./components/Controls";
 import { PdfPreview } from "./components/PdfPreview";
-import { Status } from "./components/Status";
 import { GhostscriptStatus } from "./components/GhostscriptStatus";
 import { useElectronAPI } from "./hooks/useElectronAPI";
+import { toast, Toaster } from "sonner";
 
 interface FileItem {
   path: string;
@@ -24,8 +24,7 @@ export default function App() {
   const [selectedFiles, setSelectedFiles] = useState<FileItem[]>([]);
   const [mergedFilePath, setMergedFilePath] = useState<string | null>(null);
   const [pageThumbnails, setPageThumbnails] = useState<PageThumbnail[]>([]);
-  const [status, setStatus] = useState<string>("");
-  const [mergeStatus, setMergeStatus] = useState<string>("");
+
   const [ghostscriptAvailable, setGhostscriptAvailable] =
     useState<boolean>(false);
   const [isInstallingGhostscript, setIsInstallingGhostscript] =
@@ -56,19 +55,18 @@ export default function App() {
         name: filePath.split(/[/\\]/).pop() || filePath,
       }));
       setSelectedFiles(newFiles);
-      setStatus("");
 
       // Generate thumbnails for the selected files
       await generateThumbnails(newFiles);
     } catch (error) {
       console.error("Error selecting files:", error);
-      setStatus("Erro ao selecionar arquivo(s)");
+      toast.error("Erro ao selecionar arquivo(s)");
     }
   };
 
   const generateThumbnails = async (files: FileItem[]) => {
     try {
-      setStatus("Gerando visualizações...");
+      toast.loading("Gerando visualizações...");
       const thumbnails: PageThumbnail[] = [];
 
       for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
@@ -166,10 +164,10 @@ export default function App() {
       }
 
       setPageThumbnails(thumbnails);
-      setStatus("");
+      toast.dismiss();
     } catch (error) {
       console.error("Error generating thumbnails:", error);
-      setStatus("Erro ao gerar visualizações");
+      toast.error("Erro ao gerar visualizações");
     }
   };
 
@@ -177,57 +175,78 @@ export default function App() {
     setSelectedFiles([]);
     setPageThumbnails([]);
     setMergedFilePath(null);
-    setStatus("");
-    setMergeStatus("");
   };
 
   const handleMergeFiles = async () => {
     if (selectedFiles.length === 0) return;
 
-    setMergeStatus("Juntando PDFs...");
+    const loadingToast = toast.loading("Juntando PDFs...");
     try {
-      // This would need to be implemented with pdf-merger-js
-      // For now, we'll just simulate the merge
-      const mergedPath = "merged.pdf";
-      setMergedFilePath(mergedPath);
-      setMergeStatus("PDFs juntados com sucesso!");
+      // Prompt user to select save location
+      const outputPath = await electronAPI.selectSavePath("merged.pdf");
+      if (!outputPath) {
+        toast.dismiss(loadingToast);
+        return;
+      }
+
+      // Create a flat list of pages in the exact order they appear in thumbnails
+      const pageSequence = pageThumbnails.map((thumbnail) => ({
+        filePath: selectedFiles[thumbnail.fileIndex].path,
+        pageIndex: thumbnail.pageIndex,
+      }));
+
+      // Merge the PDFs with exact page sequence
+      await electronAPI.mergePdfsSequence(pageSequence, outputPath);
+
+      setMergedFilePath(outputPath);
+      toast.dismiss(loadingToast);
+      toast.success("PDFs juntados com sucesso!");
     } catch (error) {
       console.error("Error merging files:", error);
-      setMergeStatus("Erro ao juntar PDFs");
+      toast.dismiss(loadingToast);
+      toast.error("Erro ao juntar PDFs");
     }
   };
 
   const handleConvertSingle = async () => {
     if (selectedFiles.length === 0) return;
 
-    setStatus("Convertendo para PDF/A...");
+    const loadingToast = toast.loading("Convertendo para PDF/A...");
     try {
       const outputPath = await electronAPI.selectSavePath("converted.pdf");
       if (outputPath) {
         await electronAPI.convertToPdfa(selectedFiles[0].path, outputPath);
-        setStatus("Conversão concluída com sucesso!");
+        toast.dismiss(loadingToast);
+        toast.success("Conversão concluída com sucesso!");
+      } else {
+        toast.dismiss(loadingToast);
       }
     } catch (error) {
       console.error("Error converting file:", error);
-      setStatus("Erro na conversão");
+      toast.dismiss(loadingToast);
+      toast.error("Erro na conversão");
     }
   };
 
   const handleConvertMerged = async () => {
     if (!mergedFilePath) return;
 
-    setStatus("Convertendo para PDF/A...");
+    const loadingToast = toast.loading("Convertendo para PDF/A...");
     try {
       const outputPath = await electronAPI.selectSavePath(
         "merged-converted.pdf"
       );
       if (outputPath) {
         await electronAPI.convertToPdfa(mergedFilePath, outputPath);
-        setStatus("Conversão concluída com sucesso!");
+        toast.dismiss(loadingToast);
+        toast.success("Conversão concluída com sucesso!");
+      } else {
+        toast.dismiss(loadingToast);
       }
     } catch (error) {
       console.error("Error converting merged file:", error);
-      setStatus("Erro na conversão");
+      toast.dismiss(loadingToast);
+      toast.error("Erro na conversão");
     }
   };
 
@@ -250,8 +269,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="container mx-auto max-w-7xl space-y-6">
+    <div className="min-h-screen bg-background">
+      <Toaster position="top-right" />
+      <div className="container mx-auto max-w-7xl space-y-6 pt-20 px-6">
         {/* Ghostscript Status - Top Right Corner */}
         <div className="absolute top-4 right-4 z-50">
           <GhostscriptStatus
@@ -279,8 +299,6 @@ export default function App() {
         />
 
         <PdfPreview thumbnails={pageThumbnails} onReorder={handleDragReorder} />
-
-        <Status status={status} mergeStatus={mergeStatus} />
       </div>
     </div>
   );

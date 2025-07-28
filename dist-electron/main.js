@@ -19252,6 +19252,43 @@ async function initializeGhostscript() {
     return false;
   }
 }
+async function mergePdfs(inputPaths, outputPath, pageOrders) {
+  try {
+    const mergedPdf = await PDFDocument.create();
+    for (let i = 0; i < inputPaths.length; i++) {
+      const inputPath = inputPaths[i];
+      const pdfBytes = fs.readFileSync(inputPath);
+      const pdf = await PDFDocument.load(pdfBytes);
+      const pageIndices = pageOrders && pageOrders[i] ? pageOrders[i].map((pageNum) => pageNum) : pdf.getPageIndices();
+      const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+    const mergedPdfBytes = await mergedPdf.save();
+    fs.writeFileSync(outputPath, mergedPdfBytes);
+  } catch (error2) {
+    throw new Error(`Failed to merge PDFs: ${error2}`);
+  }
+}
+async function mergePdfsWithSequence(pageSequence, outputPath) {
+  try {
+    const mergedPdf = await PDFDocument.create();
+    const pdfCache = /* @__PURE__ */ new Map();
+    for (const { filePath, pageIndex } of pageSequence) {
+      if (!pdfCache.has(filePath)) {
+        const pdfBytes = fs.readFileSync(filePath);
+        const pdf2 = await PDFDocument.load(pdfBytes);
+        pdfCache.set(filePath, pdf2);
+      }
+      const pdf = pdfCache.get(filePath);
+      const copiedPages = await mergedPdf.copyPages(pdf, [pageIndex]);
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+    const mergedPdfBytes = await mergedPdf.save();
+    fs.writeFileSync(outputPath, mergedPdfBytes);
+  } catch (error2) {
+    throw new Error(`Failed to merge PDFs: ${error2}`);
+  }
+}
 electron.ipcMain.handle("check-ghostscript", async () => {
   return await initializeGhostscript();
 });
@@ -19283,6 +19320,18 @@ electron.ipcMain.handle(
         resolve(outputPath);
       });
     });
+  }
+);
+electron.ipcMain.handle(
+  "merge-pdfs",
+  async (event, inputPaths, outputPath, pageOrders) => {
+    return await mergePdfs(inputPaths, outputPath, pageOrders);
+  }
+);
+electron.ipcMain.handle(
+  "merge-pdfs-sequence",
+  async (event, pageSequence, outputPath) => {
+    return await mergePdfsWithSequence(pageSequence, outputPath);
   }
 );
 electron.ipcMain.handle("select-files", async () => {
