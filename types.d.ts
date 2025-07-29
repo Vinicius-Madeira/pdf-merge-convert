@@ -12,6 +12,7 @@ interface ElectronAPI {
   checkGhostscript: () => Promise<boolean>;
   getGhostscriptPath: () => Promise<string | null>;
   getPdfPageCount: (filePath: string) => Promise<number>;
+  checkPdfACompliance: (filePath: string) => Promise<boolean>;
   generatePdfThumbnail: (
     filePath: string,
     pageNumber: number

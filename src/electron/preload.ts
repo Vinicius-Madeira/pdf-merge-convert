@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getGhostscriptPath: () => ipcRenderer.invoke("get-ghostscript-path"),
   getPdfPageCount: (filePath: string) =>
     ipcRenderer.invoke("get-pdf-page-count", filePath),
+  checkPdfACompliance: (filePath: string) =>
+    ipcRenderer.invoke("check-pdfa-compliance", filePath),
   generatePdfThumbnail: (filePath: string, pageNumber: number) =>
     ipcRenderer.invoke("generate-pdf-thumbnail", filePath, pageNumber),
   convertToPdfa: (inputPath: string, outputPath: string) =>

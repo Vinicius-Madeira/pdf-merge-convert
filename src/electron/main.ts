@@ -39,6 +39,41 @@ function createWindow() {
   }
 }
 
+// Check if a PDF is PDF/A compliant
+async function checkPdfACompliance(filePath: string): Promise<boolean> {
+  try {
+    if (!ghostscriptPath) {
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      const command = `"${ghostscriptPath}"\
+        -dPDFA=1 \
+        -dBATCH \
+        -dNOPAUSE \
+        -dNOOUTERSAVE \
+        -sDEVICE=pdfwrite \
+        -sColorConversionStrategy=RGB \
+        -sProcessColorModel=DeviceRGB \
+        -dPDFACompatibilityPolicy=1 \
+        -dEmbedAllFonts=true \
+        -dSubsetFonts=true \
+        -dCompressFonts=true \
+        -dNOPLATFONTS \
+        -sOutputFile="output.pdf" \
+        -sPDFAOutputIntent="/usr/share/color/icc/colord/sRGB.icc" \
+        "${filePath}"`;
+
+      exec(command, (error, stdout, stderr) => {
+        // If no error, the file is PDF/A compliant
+        resolve(!error);
+      });
+    });
+  } catch (error) {
+    return false;
+  }
+}
+
 // Check if Ghostscript is available
 async function checkGhostscript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -376,6 +411,10 @@ ipcMain.handle("get-pdf-page-count", async (event, filePath: string) => {
   return await getPdfPageCount(filePath);
 });
 
+ipcMain.handle("check-pdfa-compliance", async (event, filePath: string) => {
+  return await checkPdfACompliance(filePath);
+});
+
 ipcMain.handle(
   "generate-pdf-thumbnail",
   async (event, filePath: string, pageNumber: number) => {
@@ -391,13 +430,25 @@ ipcMain.handle(
     }
 
     return new Promise((resolve, reject) => {
-      const command = `"${ghostscriptPath}" -sDEVICE=pdfwrite -dPDFA=1 -dPDFACompatibilityPolicy=1 -sOutputFile="${outputPath}" -dNOPAUSE -dBATCH "${inputPath}"`;
+      // Enhanced PDF/A conversion with better parameters
+      const command = `"${ghostscriptPath}" -sDEVICE=pdfwrite -dPDFA=1 -dPDFACompatibilityPolicy=1 -dPDFACompatibilityPolicy=1 -dColorImageDownsampleType=/Bicubic -dColorImageResolution=150 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=150 -dColorConversionStrategy=/sRGB -dOverrideICC -sOutputFile="${outputPath}" -dNOPAUSE -dBATCH -q "${inputPath}"`;
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          reject(error);
+          console.error("Ghostscript error:", error);
+          console.error("Ghostscript stderr:", stderr);
+          reject(new Error(`PDF/A conversion failed: ${error.message}`));
           return;
         }
+
+        // Check if output file was created
+        if (!fs.existsSync(outputPath)) {
+          reject(
+            new Error("PDF/A conversion failed: Output file was not created")
+          );
+          return;
+        }
+
         resolve(outputPath);
       });
     });

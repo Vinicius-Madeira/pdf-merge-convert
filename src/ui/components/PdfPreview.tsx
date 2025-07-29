@@ -146,7 +146,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                     </Badge>
                   </div>
                   {isDragOver && (
-                    <div className="absolute inset-0 bg-primary/10 border-2 border-primary/50 rounded flex items-center justify-center">
+                    <div className="absolute inset-0 bg-primary/10 border-2 rounded flex items-center justify-center">
                       <div className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
                         Soltar aqui
                       </div>

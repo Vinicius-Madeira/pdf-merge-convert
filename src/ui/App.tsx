@@ -216,15 +216,29 @@ export default function App() {
       const outputPath = await electronAPI.selectSavePath("converted.pdf");
       if (outputPath) {
         await electronAPI.convertToPdfa(selectedFiles[0].path, outputPath);
+
+        // Verify the conversion was successful
+        const isCompliant = await electronAPI.checkPdfACompliance(outputPath);
+
         toast.dismiss(loadingToast);
-        toast.success("Conversão concluída com sucesso!");
+        if (isCompliant) {
+          toast.success("Conversão para PDF/A concluída com sucesso!");
+        } else {
+          toast.warning(
+            "Arquivo convertido, mas pode não estar totalmente compatível com PDF/A"
+          );
+        }
       } else {
         toast.dismiss(loadingToast);
       }
     } catch (error) {
       console.error("Error converting file:", error);
       toast.dismiss(loadingToast);
-      toast.error("Erro na conversão");
+      toast.error(
+        `Erro na conversão: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
     }
   };
 
@@ -238,15 +252,29 @@ export default function App() {
       );
       if (outputPath) {
         await electronAPI.convertToPdfa(mergedFilePath, outputPath);
+
+        // Verify the conversion was successful
+        const isCompliant = await electronAPI.checkPdfACompliance(outputPath);
+
         toast.dismiss(loadingToast);
-        toast.success("Conversão concluída com sucesso!");
+        if (isCompliant) {
+          toast.success("Conversão para PDF/A concluída com sucesso!");
+        } else {
+          toast.warning(
+            "Arquivo convertido, mas pode não estar totalmente compatível com PDF/A"
+          );
+        }
       } else {
         toast.dismiss(loadingToast);
       }
     } catch (error) {
       console.error("Error converting merged file:", error);
       toast.dismiss(loadingToast);
-      toast.error("Erro na conversão");
+      toast.error(
+        `Erro na conversão: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
     }
   };
 
