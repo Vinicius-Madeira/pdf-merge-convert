@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { FileText, Move } from "lucide-react";
-import { useState } from "react";
+import { FileText, Move, GripVertical } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 interface PageThumbnail {
   id: string;
@@ -19,6 +19,115 @@ interface PdfPreviewProps {
 export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const autoScrollInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-scroll functionality
+  const handleAutoScroll = (clientY: number) => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const scrollThreshold = 100; // pixels from edge to trigger scroll
+    const scrollSpeed = 5;
+
+    // Clear existing interval
+    if (autoScrollInterval.current) {
+      clearInterval(autoScrollInterval.current);
+      autoScrollInterval.current = null;
+    }
+
+    // Check if we need to scroll up
+    if (clientY - rect.top < scrollThreshold && container.scrollTop > 0) {
+      autoScrollInterval.current = setInterval(() => {
+        if (container.scrollTop <= 0) {
+          if (autoScrollInterval.current) {
+            clearInterval(autoScrollInterval.current);
+            autoScrollInterval.current = null;
+          }
+          return;
+        }
+        container.scrollTop -= scrollSpeed;
+      }, 16); // ~60fps
+    }
+    // Check if we need to scroll down
+    else if (
+      rect.bottom - clientY < scrollThreshold &&
+      container.scrollTop < container.scrollHeight - container.clientHeight
+    ) {
+      autoScrollInterval.current = setInterval(() => {
+        if (
+          container.scrollTop >=
+          container.scrollHeight - container.clientHeight
+        ) {
+          if (autoScrollInterval.current) {
+            clearInterval(autoScrollInterval.current);
+            autoScrollInterval.current = null;
+          }
+          return;
+        }
+        container.scrollTop += scrollSpeed;
+      }, 16); // ~60fps
+    }
+  };
+
+  const stopAutoScroll = () => {
+    if (autoScrollInterval.current) {
+      clearInterval(autoScrollInterval.current);
+      autoScrollInterval.current = null;
+    }
+  };
+
+  // Create custom drag image
+  const createDragImage = (thumbnail: PageThumbnail, index: number) => {
+    const dragElement = document.createElement("div");
+    dragElement.style.cssText = `
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      width: 120px;
+      height: 80px;
+      background: hsl(var(--background));
+      border: 2px solid hsl(var(--primary));
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      font-family: system-ui, -apple-system, sans-serif;
+      color: hsl(var(--foreground));
+      z-index: 1000;
+    `;
+
+    dragElement.innerHTML = `
+      <div style="display: flex; align-items: center; margin-bottom: 4px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <line x1="10" y1="9" x2="8" y2="9"/>
+        </svg>
+        <span style="margin-left: 4px; font-size: 12px; font-weight: 600;">Página ${
+          index + 1
+        }</span>
+      </div>
+      <div style="font-size: 10px; color: hsl(var(--muted-foreground)); text-align: center; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        ${removeFileExtension(thumbnail.fileName)}
+      </div>
+    `;
+
+    document.body.appendChild(dragElement);
+    return dragElement;
+  };
+
+  useEffect(() => {
+    // Cleanup auto-scroll on unmount
+    return () => {
+      stopAutoScroll();
+    };
+  }, []);
 
   if (thumbnails.length === 0) {
     return (
@@ -53,7 +162,10 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
           <Move className="h-4 w-4" />
           <span>Arraste e solte as páginas para reorganizá-las</span>
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div
+          ref={containerRef}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto"
+        >
           {thumbnails.map((thumbnail, index) => {
             const isDragging = draggedId === thumbnail.id;
             const isDragOver = dragOverId === thumbnail.id;
@@ -64,7 +176,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                 className={`group relative border rounded-lg p-2 bg-background transition-all duration-200 ease-in-out cursor-move
                   ${
                     isDragging
-                      ? "opacity-50 scale-95 rotate-2 shadow-lg"
+                      ? "opacity-30 scale-95 rotate-1 shadow-lg border-primary/50"
                       : isDragOver
                       ? "border-primary/50 bg-primary/5 scale-105 shadow-md"
                       : "hover:bg-muted/50 hover:scale-102"
@@ -77,19 +189,23 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                   e.dataTransfer.setData("text/plain", thumbnail.id);
                   e.dataTransfer.effectAllowed = "move";
 
-                  // Add a slight delay to the drag start for better visual feedback
+                  // Create custom drag image
+                  const dragImage = createDragImage(thumbnail, index);
+                  e.dataTransfer.setDragImage(dragImage, 60, 40);
+
+                  // Clean up drag image after a delay
                   setTimeout(() => {
-                    if (e.target instanceof HTMLElement) {
-                      e.target.style.opacity = "0.5";
-                    }
-                  }, 0);
+                    document.body.removeChild(dragImage);
+                  }, 100);
                 }}
-                onDragEnd={(e) => {
+                onDrag={(e) => {
+                  // Handle auto-scroll during drag
+                  handleAutoScroll(e.clientY);
+                }}
+                onDragEnd={() => {
                   setDraggedId(null);
                   setDragOverId(null);
-                  if (e.target instanceof HTMLElement) {
-                    e.target.style.opacity = "";
-                  }
+                  stopAutoScroll();
                 }}
                 onDragEnter={(e) => {
                   e.preventDefault();
@@ -133,13 +249,23 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                 }}
               >
                 <div className="relative">
+                  {/* Drag handle indicator */}
+                  <div
+                    className={`absolute top-1 right-1 z-10 p-1 rounded bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity ${
+                      isDragging ? "opacity-100" : ""
+                    }`}
+                  >
+                    <GripVertical className="h-3 w-3 text-muted-foreground" />
+                  </div>
+
                   <div className="bg-white rounded p-2 shadow-sm">
                     <img
                       src={thumbnail.src}
                       alt={`Page ${thumbnail.pageIndex + 1}`}
-                      className={`w-full h-auto rounded transition-all duration-200
+                      className={`w-full h-auto rounded transition-all duration-200 select-none
                         ${isDragOver ? "border-primary/50" : ""}
                       `}
+                      draggable={false}
                     />
                   </div>
                   <div className="absolute -top-1 -left-1">
