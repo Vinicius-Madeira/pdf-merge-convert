@@ -22,15 +22,13 @@ export function GhostscriptStatus({
   // If available, show a small notification
   if (available) {
     return (
-      <div className="fixed top-4 right-4 z-50">
-        <Badge
-          variant="default"
-          className="flex items-center space-x-1 bg-green-500 hover:bg-green-600"
-        >
-          <CheckCircle className="h-3 w-3" />
-          <span>Ghostscript</span>
-        </Badge>
-      </div>
+      <Badge
+        variant="default"
+        className="flex items-center space-x-1 bg-green-500 hover:bg-green-600"
+      >
+        <CheckCircle className="h-3 w-3" />
+        <span>Ghostscript</span>
+      </Badge>
     );
   }
 

@@ -3,6 +3,7 @@ import { FileList } from "./components/FileList";
 import { Controls } from "./components/Controls";
 import { PdfPreview } from "./components/PdfPreview";
 import { GhostscriptStatus } from "./components/GhostscriptStatus";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { useElectronAPI } from "./hooks/useElectronAPI";
 import { toast, Toaster } from "sonner";
 
@@ -300,8 +301,9 @@ export default function App() {
     <div className="min-h-screen bg-background">
       <Toaster position="top-right" />
       <div className="container mx-auto max-w-7xl space-y-6 pt-20 px-6">
-        {/* Ghostscript Status - Top Right Corner */}
-        <div className="absolute top-4 right-4 z-50">
+        {/* Theme Toggle and Ghostscript Status - Top Right Corner */}
+        <div className="fixed top-4 right-4 z-50 flex items-center space-x-2">
+          <ThemeToggle />
           <GhostscriptStatus
             available={ghostscriptAvailable}
             isInstalling={isInstallingGhostscript}

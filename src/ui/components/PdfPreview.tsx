@@ -133,15 +133,17 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                 }}
               >
                 <div className="relative">
-                  <img
-                    src={thumbnail.src}
-                    alt={`Page ${thumbnail.pageIndex + 1}`}
-                    className={`w-full h-auto rounded transition-all duration-200
-                      ${isDragOver ? "border-primary/50" : ""}
-                    `}
-                  />
+                  <div className="bg-white rounded p-2 shadow-sm">
+                    <img
+                      src={thumbnail.src}
+                      alt={`Page ${thumbnail.pageIndex + 1}`}
+                      className={`w-full h-auto rounded transition-all duration-200
+                        ${isDragOver ? "border-primary/50" : ""}
+                      `}
+                    />
+                  </div>
                   <div className="absolute -top-1 -left-1">
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       {index + 1}
                     </Badge>
                   </div>
