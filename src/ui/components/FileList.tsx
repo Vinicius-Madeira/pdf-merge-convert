@@ -1,7 +1,7 @@
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { X, Trash2 } from "lucide-react";
+import { X } from "lucide-react";
 
 interface FileItem {
   path: string;
@@ -12,10 +12,9 @@ interface FileItem {
 interface FileListProps {
   files: FileItem[];
   onRemoveFile: (index: number) => void;
-  onClearFiles: () => void;
 }
 
-export function FileList({ files, onRemoveFile, onClearFiles }: FileListProps) {
+export function FileList({ files, onRemoveFile }: FileListProps) {
   if (files.length === 0) {
     return null;
   }
@@ -23,13 +22,7 @@ export function FileList({ files, onRemoveFile, onClearFiles }: FileListProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Arquivos Selecionados ({files.length})</CardTitle>
-          <Button onClick={onClearFiles} variant="destructive" size="sm">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Limpar Seleção
-          </Button>
-        </div>
+        <CardTitle>Arquivos Selecionados ({files.length})</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">

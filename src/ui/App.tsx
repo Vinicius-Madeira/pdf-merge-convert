@@ -55,10 +55,13 @@ export default function App() {
         path: filePath,
         name: filePath.split(/[/\\]/).pop() || filePath,
       }));
-      setSelectedFiles(newFiles);
+      if (newFiles.length === 0) return;
 
-      // Generate thumbnails for the selected files
-      await generateThumbnails(newFiles);
+      // Add new files to existing files instead of replacing
+      const allFiles = [...selectedFiles, ...newFiles];
+      setSelectedFiles(allFiles);
+      // Generate thumbnails for all files (existing + new)
+      await generateThumbnails(allFiles);
     } catch (error) {
       console.error("Error selecting files:", error);
       toast.error("Erro ao selecionar arquivo(s)");
@@ -67,7 +70,7 @@ export default function App() {
 
   const generateThumbnails = async (files: FileItem[]) => {
     try {
-      toast.loading("Gerando visualizações...");
+      toast.loading("Gerando visualizações...", { duration: 5000 });
       const thumbnails: PageThumbnail[] = [];
 
       for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
@@ -210,18 +213,29 @@ export default function App() {
   };
 
   const handleConvertSingle = async () => {
-    if (selectedFiles.length === 0) return;
-
-    const loadingToast = toast.loading("Convertendo para PDF/A...");
+    const loadingToast = toast.loading(
+      "Selecionando arquivo para conversão..."
+    );
     try {
+      // Let user select a specific file for conversion
+      const filePaths = await electronAPI.selectFiles();
+      if (filePaths.length === 0) {
+        toast.dismiss(loadingToast);
+        return;
+      }
+
+      const selectedFile = filePaths[0]; // Take the first selected file
+      toast.dismiss(loadingToast);
+
+      const convertingToast = toast.loading("Convertendo para PDF/A...");
       const outputPath = await electronAPI.selectSavePath("converted.pdf");
       if (outputPath) {
-        await electronAPI.convertToPdfa(selectedFiles[0].path, outputPath);
+        await electronAPI.convertToPdfa(selectedFile, outputPath);
 
         // Verify the conversion was successful
         const isCompliant = await electronAPI.checkPdfACompliance(outputPath);
 
-        toast.dismiss(loadingToast);
+        toast.dismiss(convertingToast);
         if (isCompliant) {
           toast.success("Conversão para PDF/A concluída com sucesso!");
         } else {
@@ -230,7 +244,7 @@ export default function App() {
           );
         }
       } else {
-        toast.dismiss(loadingToast);
+        toast.dismiss(convertingToast);
       }
     } catch (error) {
       console.error("Error converting file:", error);
@@ -317,16 +331,13 @@ export default function App() {
           onMergeFiles={handleMergeFiles}
           onConvertSingle={handleConvertSingle}
           onConvertMerged={handleConvertMerged}
+          onClearFiles={handleClearFiles}
           hasFiles={selectedFiles.length > 0}
           hasMergedFile={!!mergedFilePath}
           ghostscriptAvailable={ghostscriptAvailable}
         />
 
-        <FileList
-          files={selectedFiles}
-          onRemoveFile={handleRemoveFile}
-          onClearFiles={handleClearFiles}
-        />
+        <FileList files={selectedFiles} onRemoveFile={handleRemoveFile} />
 
         <PdfPreview thumbnails={pageThumbnails} onReorder={handleDragReorder} />
       </div>
