@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { CheckCircle, AlertTriangle, Download, X } from "lucide-react";
 import { useState } from "react";
 
@@ -19,16 +20,17 @@ export function GhostscriptStatus({
 }: GhostscriptStatusProps) {
   const [showModal, setShowModal] = useState(!available);
 
-  // If available, show a small notification
+  // If available, show a small check icon with tooltip
   if (available) {
     return (
-      <Badge
-        variant="default"
-        className="flex items-center space-x-1 bg-green-500 hover:bg-green-600"
-      >
-        <CheckCircle className="h-3 w-3" />
-        <span>Ghostscript</span>
-      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Ghostscript Instalado!</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -44,7 +46,7 @@ export function GhostscriptStatus({
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center space-x-2">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              <span>Ghostscript Required</span>
+              <span>Ghostscript Necessário</span>
             </span>
             <Button
               variant="ghost"
@@ -58,8 +60,12 @@ export function GhostscriptStatus({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            <p>Ghostscript is required for PDF/A conversion functionality.</p>
-            <p className="mt-2">Some features may not work without it.</p>
+            <p>
+              Ghostscript é necessário para a funcionalidade de conversão PDF/A.
+            </p>
+            <p className="mt-2">
+              Algumas funcionalidades podem não funcionar sem ele.
+            </p>
           </div>
 
           {isInstalling ? (
@@ -71,21 +77,21 @@ export function GhostscriptStatus({
                 />
               </div>
               <span className="text-sm text-muted-foreground">
-                Installing... {Math.round(progress)}%
+                Instalando... {Math.round(progress)}%
               </span>
             </div>
           ) : (
             <div className="space-y-3">
               <Button onClick={onInstall} className="w-full" variant="default">
                 <Download className="h-4 w-4 mr-2" />
-                Install Ghostscript
+                Instalar Ghostscript
               </Button>
               <Button
                 onClick={() => setShowModal(false)}
                 className="w-full"
                 variant="outline"
               >
-                Continue without Ghostscript
+                Continuar sem Ghostscript
               </Button>
             </div>
           )}

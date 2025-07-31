@@ -316,7 +316,7 @@ export default function App() {
       <Toaster position="top-right" />
       <div className="container mx-auto max-w-7xl space-y-6 pt-20 px-6">
         {/* Theme Toggle and Ghostscript Status - Top Right Corner */}
-        <div className="fixed top-4 right-4 z-50 flex items-center space-x-2">
+        <div className="fixed top-0 right-12 z-50 flex items-center space-x-2">
           <ThemeToggle />
           <GhostscriptStatus
             available={ghostscriptAvailable}

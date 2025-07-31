@@ -31,13 +31,13 @@ export function ThemeToggle() {
   const getTooltip = () => {
     switch (theme) {
       case "light":
-        return "Switch to dark mode";
+        return "Alternar para o modo escuro";
       case "dark":
-        return "Switch to system mode";
+        return "Alternar para o modo do sistema";
       case "system":
-        return "Switch to light mode";
+        return "Alternar para o modo claro";
       default:
-        return "Toggle theme";
+        return "Alternar tema";
     }
   };
 
@@ -47,7 +47,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={cycleTheme}
       title={getTooltip()}
-      className="h-9 w-9"
+      className="h-8 w-8"
     >
       {getIcon()}
       <span className="sr-only">{getTooltip()}</span>
