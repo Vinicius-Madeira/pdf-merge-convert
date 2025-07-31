@@ -157,14 +157,14 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
           <Badge variant="secondary">{thumbnails.length} páginas</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4 flex items-center space-x-2">
+      <CardContent className="p-0">
+        <p className="px-6 text-sm text-muted-foreground mb-4 flex items-center space-x-2">
           <Move className="h-4 w-4" />
           <span>Arraste e solte as páginas para reorganizá-las</span>
         </p>
         <div
           ref={containerRef}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto p-6"
         >
           {thumbnails.map((thumbnail, index) => {
             const isDragging = draggedId === thumbnail.id;
@@ -176,7 +176,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                 className={`group relative border rounded-lg p-2 bg-background transition-all duration-200 ease-in-out cursor-move
                   ${
                     isDragging
-                      ? "opacity-30 scale-95 rotate-1 shadow-lg border-primary/50"
+                      ? "opacity-30 scale-95 rotate-1 shadow-lg"
                       : isDragOver
                       ? "border-primary/50 bg-primary/5 scale-105 shadow-md"
                       : "hover:bg-muted/50 hover:scale-102"
@@ -274,7 +274,7 @@ export function PdfPreview({ thumbnails, onReorder }: PdfPreviewProps) {
                     </Badge>
                   </div>
                   {isDragOver && (
-                    <div className="absolute inset-0 bg-primary/10 border-2 rounded flex items-center justify-center">
+                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
                       <div className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
                         Soltar aqui
                       </div>

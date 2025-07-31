@@ -1,6 +1,6 @@
 {
   "name": "pdf-world",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "PDF to PDF/A Converter with drag-and-drop page rearrangement",
   "homepage": "https://github.com/Vinicius-Madeira/pdf-world",
   "main": "dist-electron/main.js",
