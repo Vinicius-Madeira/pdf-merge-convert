@@ -1,6 +1,6 @@
 {
   "name": "pdf-world",
-  "version": "1.0.0",
+  "version": "2.2.4",
   "description": "PDF to PDF/A Converter with drag-and-drop page rearrangement",
   "homepage": "https://github.com/Vinicius-Madeira/pdf-world",
   "main": "dist-electron/main.js",
@@ -70,9 +70,45 @@
     },
     "files": [
       "dist-electron/**/*",
-      "dist/**/*",
-      "package.json"
+      "dist/index.html",
+      "dist/assets/**/*",
+      "package.json",
+      "!node_modules/**/*",
+      "!src/**/*",
+      "!docs/**/*",
+      "!*.md",
+      "!.git/**/*",
+      "!.vscode/**/*",
+      "!.eslintrc*",
+      "!.gitignore",
+      "!*.config.js",
+      "!*.config.ts",
+      "!tsconfig*.json",
+      "!dist/*.exe",
+      "!dist/*.AppImage",
+      "!dist/*.deb",
+      "!dist/*.dmg",
+      "!dist/win-unpacked/**/*",
+      "!dist/linux-unpacked/**/*",
+      "!dist/mac/**/*",
+      "!dist/*.yml",
+      "!dist/*.yaml",
+      "!dist/*.blockmap"
     ],
+    "extraFiles": [],
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "buildDependenciesFromSource": false,
+    "nodeGypRebuild": false,
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "perMachine": true,
+      "differentialPackage": false
+    },
     "linux": {
       "target": [
         {
@@ -101,7 +137,8 @@
         }
       ],
       "icon": "build/icon.ico",
-      "requestedExecutionLevel": "requireAdministrator"
+      "requestedExecutionLevel": "requireAdministrator",
+      "compression": "maximum"
     },
     "mac": {
       "target": [
@@ -114,13 +151,6 @@
         }
       ],
       "icon": "build/icon.icns"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "perMachine": true
     }
   }
 }
