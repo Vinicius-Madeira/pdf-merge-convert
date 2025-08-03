@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import fs from "fs";
@@ -17,6 +18,7 @@ const GHOSTSCRIPT_URLS = {
 
 let ghostscriptPath: string | null = null;
 let isInstallingGhostscript = false;
+// eslint-disable-next-line prefer-const
 let ghostscriptInstallationDeclined = false;
 
 function createWindow() {
@@ -430,8 +432,7 @@ ipcMain.handle(
     }
 
     return new Promise((resolve, reject) => {
-      // Enhanced PDF/A conversion with better parameters
-      const command = `"${ghostscriptPath}" -sDEVICE=pdfwrite -dPDFA=1 -dPDFACompatibilityPolicy=1 -dPDFACompatibilityPolicy=1 -dColorImageDownsampleType=/Bicubic -dColorImageResolution=150 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=150 -dColorConversionStrategy=/sRGB -dOverrideICC -sOutputFile="${outputPath}" -dNOPAUSE -dBATCH -q "${inputPath}"`;
+      const command = `"${ghostscriptPath}" -dPDFA=2 -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -sColorConversionStrategy=UseDeviceIndependentColor -sProcessColorModel=DeviceCMYK -dPDFACompatibilityPolicy=1 -dAutoFilterColorImages=false -dAutoFilterGrayImages=false -dColorImageFilter=/FlateEncode -dGrayImageFilter=/FlateEncode -sOutputFile="${outputPath}" "${inputPath}"`;
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
