@@ -1,23 +1,20 @@
+import { useGhostscript } from "../hooks/useGhostscript";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { CheckCircle, AlertTriangle, Download, X } from "lucide-react";
 import { useState } from "react";
 
 interface GhostscriptStatusProps {
   available: boolean;
-  isInstalling: boolean;
-  progress: number;
   onInstall: () => void;
 }
 
 export function GhostscriptStatus({
   available,
-  isInstalling,
-  progress,
   onInstall,
 }: GhostscriptStatusProps) {
+  const { isInstalling, progress } = useGhostscript();
   const [showModal, setShowModal] = useState(!available);
 
   // If available, show a small check icon with tooltip
